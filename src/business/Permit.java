@@ -7,76 +7,88 @@ import java.util.Scanner;
 public class Permit {
     public void permit() {
         Scanner scanner = new Scanner(System.in);
-        String response;
+        String response = null;
         Permit pr = new Permit();
-
+        
         do {
-            System.out.println("==================================");
-            System.out.println("=== PERMIT PANEL ===");
-            System.out.println("==================================");
+        System.out.println("==================================");
+        System.out.println("=== PERMIT PANEL ===");
+        System.out.println("==================================");
+
+        int action = 0;
+        boolean validInput = false;
+
+        while (!validInput) {
             System.out.println("1. ADD PERMIT");
             System.out.println("2. VIEW PERMIT");
             System.out.println("3. UPDATE PERMIT");
             System.out.println("4. DELETE PERMIT");
             System.out.println("5. EXIT");
-
             System.out.print("Enter Action: ");
-            while (!scanner.hasNextInt()) {
+
+            if (scanner.hasNextInt()) {
+                action = scanner.nextInt();
+                if (action >= 1 && action <= 5) {
+                    validInput = true; 
+                } else {
+                    System.out.println("Invalid choice. Please choose a number between 1 and 5.");
+                }
+            } else {
                 System.out.println("Invalid input. Please enter a number.");
-                scanner.next();
+                scanner.next(); 
             }
-            int action = scanner.nextInt();
+        }
 
-            switch (action) {
-                case 1:
-                    pr.addPermit();
-                    pr.viewPermit();
-                    break;
-                case 2:
-                    pr.viewPermit();
-                    break;
-                case 3:
-                    pr.updatePermit();
-                    break;
-                case 4:
-                    pr.deletePermit();
-                    break;
-                case 5:
-                    System.out.println("Exiting Permit Panel.");
-                    return;
-                default:
-                    System.out.println("Invalid option. Please choose again.");
-            }
+        switch (action) {
+            case 1:
+                pr.addPermit();
+                pr.viewPermit();
+                break;
+            case 2:
+                pr.viewPermit();
+                break;
+            case 3:
+                pr.updatePermit();
+                break;
+            case 4:
+                pr.deletePermit();
+                break;
+            case 5:
+                System.out.println("Exiting Permit Panel.");
+                return;
+            default:
+                System.out.println("Invalid option. Please choose again.");
+        }
 
+        boolean validResponse = false;
+        while (!validResponse) {
             System.out.print("Do you want to make another transaction? (yes/no): ");
-            response = scanner.next();
+            response = scanner.next().trim().toLowerCase();
+            if (response.equals("yes") || response.equals("no")) {
+                validResponse = true; 
+            } else {
+                System.out.println("Invalid input. Please enter 'yes' or 'no'.");
+            }
+        }
 
-        } while (response.equalsIgnoreCase("yes"));
+    } while (response.equals("yes"));
     }
 
-    private void addPermit() {
+    public void addPermit() {
         Scanner sc = new Scanner(System.in);
         config conf = new config();
+
+        System.out.println("Owners List:");
         Owner o = new Owner();
         o.viewOwner();
 
-        System.out.print("Select ID of the Owner: ");
-        int o_id = sc.nextInt();
-        String osql = "SELECT COUNT(*) FROM tbl_owner WHERE o_id = ?";
-        while (conf.getSingleValue(osql, o_id) == 0) {
-            System.out.print("Owner ID does not exist. Please try again: ");
-            o_id = sc.nextInt();
-        }
+        int o_id = validatePositiveInt(sc, "Owner ID", conf, "tbl_owner", "o_id");
 
+        System.out.println("Business Types List:");
         businesstype bt = new businesstype();
         bt.viewBusiness();
-        System.out.print("Select ID of the Business Type: ");
-        int b_id = sc.nextInt();
-        String bsql = "SELECT COUNT(*) FROM tbl_businesstype WHERE b_id = ?";
-        while (conf.getSingleValue(bsql, b_id) == 0) {
-            System.out.print("Business ID does not exist. Please try again: ");
-            b_id = sc.nextInt();
-        }
+
+        int b_id = validatePositiveInt(sc, "Business Type ID", conf, "tbl_businesstype", "b_id");
 
         String getBusinessDetailsQuery = "SELECT b_type, b_address FROM tbl_businesstype WHERE b_id = ?";
         Object[] businessDetails = conf.getMultipleValues(getBusinessDetailsQuery, b_id);
@@ -100,7 +112,7 @@ public class Permit {
         System.out.println("Permit added successfully with status: " + p_status);
     }
 
-    private void viewPermit() {
+    public void viewPermit() {
         String query = "SELECT p.permit_id, o.o_fname, o.o_lname, b.b_name, b.b_type, p.issue_date, p.p_status " +
                        "FROM tbl_permit p " +
                        "JOIN tbl_owner o ON p.o_id = o.o_id " +
@@ -113,44 +125,74 @@ public class Permit {
         conf.viewRecords(query, headers, columns);
     }
 
-    private void updatePermit() {
+    public void updatePermit() {
         Scanner sc = new Scanner(System.in);
         config conf = new config();
-        
-        System.out.print("Enter Permit ID to update: ");
-        int permit_id = sc.nextInt();
 
-        String checkPermitSql = "SELECT COUNT(*) FROM tbl_permit WHERE permit_id = ?";
-        while (conf.getSingleValue(checkPermitSql, permit_id) == 0) {
-            System.out.print("Permit ID does not exist. Please try again: ");
-            permit_id = sc.nextInt();
-        }
+        int permit_id = validatePositiveInt(sc, "Permit ID", conf, "tbl_permit", "permit_id");
 
         System.out.print("Enter new Status (e.g., REGISTERED, PENDING): ");
-        String newStatus = sc.next();
-        
+        String newStatus = validateStatus(sc, "Permit Status");
+
         String updateQuery = "UPDATE tbl_permit SET p_status = ? WHERE permit_id = ?";
         conf.updateRecord(updateQuery, newStatus, permit_id);
 
         System.out.println("Permit status updated successfully.");
     }
 
-    private void deletePermit() {
+    public void deletePermit() {
         Scanner sc = new Scanner(System.in);
         config conf = new config();
 
-        System.out.print("Enter Permit ID to delete: ");
-        int permit_id = sc.nextInt();
-
-        String checkPermitSql = "SELECT COUNT(*) FROM tbl_permit WHERE permit_id = ?";
-        while (conf.getSingleValue(checkPermitSql, permit_id) == 0) {
-            System.out.print("Permit ID does not exist. Please try again: ");
-            permit_id = sc.nextInt();
-        }
+        int permit_id = validatePositiveInt(sc, "Permit ID", conf, "tbl_permit", "permit_id");
 
         String deleteQuery = "DELETE FROM tbl_permit WHERE permit_id = ?";
         conf.deleteRecord(deleteQuery, permit_id);
 
         System.out.println("Permit deleted successfully.");
+    }
+
+    private int validatePositiveInt(Scanner sc, String fieldName, config conf, String tableName, String columnName) {
+        int id;
+        do {
+            id = validateNumericInput(sc, fieldName);
+            if (!isRecordExists(conf, tableName, columnName, id)) {
+                System.out.println(fieldName + " does not exist. Please try again.");
+            } else {
+                break;
+            }
+        } while (true);
+        return id;
+    }
+
+    private int validateNumericInput(Scanner sc, String fieldName) {
+        while (!sc.hasNextInt()) {
+            System.out.println("Invalid input. Please enter a valid number for " + fieldName + ".");
+            sc.next();
+        }
+        int input = sc.nextInt();
+        if (input <= 0) {
+            System.out.println(fieldName + " must be a positive number. Please try again.");
+            return validateNumericInput(sc, fieldName);
+        }
+        return input;
+    }
+
+    private String validateStatus(Scanner sc, String fieldName) {
+        String input;
+        do {
+            input = sc.nextLine().trim().toUpperCase();
+            if (input.matches("REGISTERED|PENDING|EXPIRED")) {
+                break;
+            } else {
+                System.out.println("Invalid " + fieldName + ". Accepted values: REGISTERED, PENDING, EXPIRED.");
+            }
+        } while (true);
+        return input;
+    }
+
+    private boolean isRecordExists(config conf, String tableName, String columnName, int id) {
+        String query = "SELECT COUNT(*) FROM " + tableName + " WHERE " + columnName + " = ?";
+        return conf.getSingleValue(query, id) > 0;
     }
 }

@@ -12,18 +12,30 @@ public class businesstype {
             System.out.println("==================================");
             System.out.println("=== BUSINESS TYPE PANEL ===");
             System.out.println("==================================");
-            System.out.println("1. ADD BUSINESS");
-            System.out.println("2. VIEW BUSINESSES");
-            System.out.println("3. UPDATE BUSINESS");
-            System.out.println("4. DELETE BUSINESS");
-            System.out.println("5. EXIT");
 
-            System.out.print("Enter Action: ");
-            while (!scanner.hasNextInt()) {
-                System.out.println("Invalid input. Please enter a number.");
-                scanner.next();
+            int action = 0;
+            boolean validInput = false;
+
+            while (!validInput) {
+                System.out.println("1. ADD BUSINESS");
+                System.out.println("2. VIEW BUSINESSES");
+                System.out.println("3. UPDATE BUSINESS");
+                System.out.println("4. DELETE BUSINESS");
+                System.out.println("5. EXIT");
+                System.out.print("Enter Action: ");
+
+                if (scanner.hasNextInt()) {
+                    action = scanner.nextInt();
+                    if (action >= 1 && action <= 5) {
+                        validInput = true; 
+                    } else {
+                        System.out.println("Invalid choice. Please choose a number between 1 and 5.");
+                    }
+                } else {
+                    System.out.println("Invalid input. Please enter a number.");
+                    scanner.next(); 
+                }
             }
-            int action = scanner.nextInt();
 
             switch (action) {
                 case 1:
@@ -33,17 +45,14 @@ public class businesstype {
                     bt.viewBusiness();
                     break;
                 case 3:
-                    bt.viewBusiness();                    
+                    bt.viewBusiness();
                     bt.updateBusiness();
                     bt.viewBusiness();
-                    
-                    
                     break;
                 case 4:
-                    bt.viewBusiness();                    
+                    bt.viewBusiness();
                     bt.deleteBusiness();
                     bt.viewBusiness();
-                    
                     break;
                 case 5:
                     System.out.println("Exiting Business Type Panel.");
@@ -63,26 +72,10 @@ public class businesstype {
         config conf = new config();
 
         System.out.println("=======================");
-        System.out.print("Business Name: ");
-        String b_name = sc.nextLine();
-        if (b_name.isEmpty()) {
-            System.out.println("Business name cannot be empty.");
-            return;
-        }
 
-        System.out.print("Business Type: ");
-        String b_type = sc.nextLine();
-        if (b_type.isEmpty()) {
-            System.out.println("Business type cannot be empty.");
-            return;
-        }
-
-        System.out.print("Business Address: ");
-        String b_address = sc.nextLine();
-        if (b_address.isEmpty()) {
-            System.out.println("Business address cannot be empty.");
-            return;
-        }
+        String b_name = validateName(sc, "Business Name");
+        String b_type = validateName(sc, "Business Type");
+        String b_address = validateAddress(sc, "Business Address");
 
         String qry = "INSERT INTO tbl_businesstype (b_name, b_type, b_address) VALUES (?, ?, ?)";
         conf.addRecord(qry, b_name, b_type, b_address);
@@ -101,40 +94,15 @@ public class businesstype {
         Scanner input = new Scanner(System.in);
         config conf = new config();
 
-        System.out.print("Enter Business ID to Update: ");
-        while (!input.hasNextInt()) {
-            System.out.println("Invalid input. Please enter a valid Business ID.");
-            input.next();
-        }
-        int b_id = input.nextInt();
-
+        int b_id = validatePositiveInt(input, "Enter Business ID to Update");
         if (!isBusinessExists(b_id, conf)) {
-            System.out.println("Business with ID " + b_id + " does not exist.");
+            System.out.println("Error: Business with ID " + b_id + " does not exist.");
             return;
         }
 
-        input.nextLine();  
-
-        System.out.print("Enter new Business Name: ");
-        String newBName = input.nextLine();
-        if (newBName.isEmpty()) {
-            System.out.println("Business name cannot be empty.");
-            return;
-        }
-
-        System.out.print("Enter new Business Type: ");
-        String newBType = input.nextLine();
-        if (newBType.isEmpty()) {
-            System.out.println("Business type cannot be empty.");
-            return;
-        }
-
-        System.out.print("Enter new Business Address: ");
-        String newBAddress = input.nextLine();
-        if (newBAddress.isEmpty()) {
-            System.out.println("Business address cannot be empty.");
-            return;
-        }
+        String newBName = validateName(input, "Enter new Business Name");
+        String newBType = validateName(input, "Enter new Business Type");
+        String newBAddress = validateAddress(input, "Enter new Business Address");
 
         String updateQuery = "UPDATE tbl_businesstype SET b_name = ?, b_type = ?, b_address = ? WHERE b_id = ?";
         conf.updateRecord(updateQuery, newBName, newBType, newBAddress, b_id);
@@ -144,20 +112,64 @@ public class businesstype {
         Scanner sc = new Scanner(System.in);
         config conf = new config();
 
-        System.out.print("Enter Business ID to Delete: ");
-        while (!sc.hasNextInt()) {
-            System.out.println("Invalid input. Please enter a valid Business ID.");
-            sc.next();
-        }
-        int b_id = sc.nextInt();
-
+        int b_id = validatePositiveInt(sc, "Enter Business ID to Delete");
         if (!isBusinessExists(b_id, conf)) {
-            System.out.println("Business with ID " + b_id + " does not exist.");
+            System.out.println("Error: Business with ID " + b_id + " does not exist.");
             return;
         }
 
         String deleteQuery = "DELETE FROM tbl_businesstype WHERE b_id = ?";
         conf.deleteRecord(deleteQuery, b_id);
+    }
+
+    private String validateName(Scanner sc, String prompt) {
+        String name;
+        do {
+            System.out.print(prompt + ": ");
+            name = sc.nextLine().trim();
+            if (name.isEmpty()) {
+                System.out.println("Name cannot be empty. Please try again.");
+            } else if (!name.matches("[a-zA-Z ]{2,}")) {
+                System.out.println("Invalid name. Name must contain only letters, spaces, and be at least 2 characters long.");
+            } else {
+                break;
+            }
+        } while (true);
+        return name;
+    }
+
+    private String validateAddress(Scanner sc, String prompt) {
+        String address;
+        do {
+            System.out.print(prompt + ": ");
+            address = sc.nextLine().trim();
+            if (address.isEmpty()) {
+                System.out.println("Address cannot be empty. Please try again.");
+            } else if (address.length() < 5) {
+                System.out.println("Invalid address. Address must be at least 5 characters long.");
+            } else {
+                break;
+            }
+        } while (true);
+        return address;
+    }
+
+    private int validatePositiveInt(Scanner sc, String prompt) {
+        int number;
+        do {
+            System.out.print(prompt + ": ");
+            while (!sc.hasNextInt()) {
+                System.out.println("Invalid input. Please enter a positive integer.");
+                sc.next();
+            }
+            number = sc.nextInt();
+            if (number <= 0) {
+                System.out.println("Number must be positive. Please try again.");
+            } else {
+                break;
+            }
+        } while (true);
+        return number;
     }
 
     private boolean isBusinessExists(int b_id, config conf) {
